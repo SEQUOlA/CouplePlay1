@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>КРЕВЕТКА-РАННЕР — CouplePlay</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            min-height: 100vh;
+            background: radial-gradient(circle at 30% 20%, #1A0033, #0A0A2A);
+            font-family: 'Press Start 2P', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .game-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .top-panel {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 10;
+        }
+
+        .score-card {
+            background: rgba(14,14,42,0.9);
+            border: 2px solid #FF00FF;
+            border-radius: 25px;
+            padding: 8px 20px;
+            text-align: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .score-label {
+            font-size: 8px;
+            color: #FF69B4;
+            margin-bottom: 5px;
+        }
+
+        .score-value {
+            font-size: 24px;
+            color: #00FFFF;
+            text-shadow: 0 0 5px #00FFFF;
+        }
+
+        .round-info {
+            background: rgba(14,14,42,0.9);
+            border: 2px solid #FFFF00;
+            border-radius: 25px;
+            padding: 8px 20px;
+            text-align: center;
+        }
+
+        .round-label {
+            font-size: 8px;
+            color: #FF69B4;
+        }
+
+        .round-value {
+            font-size: 16px;
+            color: #FFFF00;
+        }
+
+        canvas {
+            display: block;
+            background: #030318;
+            border: 3px solid #FF00FF;
+            box-shadow: 0 0 30px #FF00FF;
+            width: 90%;
+            max-width: 900px;
+            aspect-ratio: 16/9;
+        }
+
+        .touch-hint {
+            position: absolute;
+            bottom: 80px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 9px;
+            color: #FF69B4;
+            background: rgba(0,0,0,0.6);
+            padding: 6px;
+            margin: 0 30px;
+            border-radius: 20px;
+        }
+
+        .back-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0A0A2A;
+            border: 2px solid #FF00FF;
+            color: white;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            padding: 8px 20px;
+            cursor: pointer;
+            border-radius: 30px;
+            z-index: 20;
+        }
+
+        .back-btn:active { transform: translateX(-50%) scale(0.95); }
+
+        .countdown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .countdown-number {
+            font-size: 120px;
+            color: #FFFF00;
+            text-shadow: 0 0 30px #FF00FF;
+            animation: countdownPulse 0.5s ease-out;
+        }
+
+        @keyframes countdownPulse {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .countdown-text {
+            font-size: 24px;
+            color: #00FFFF;
+            margin-top: 20px;
+            text-shadow: 0 0 10px #00FFFF;
+        }
+
+        .round-end-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .round-end-text {
+            font-size: 32px;
+            color: #FFFF00;
+            text-shadow: 0 0 20px #FF00FF;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .final-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.96);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(8px);
+        }
+
+        .final-text {
+            font-size: 36px;
+            color: #FFFF00;
+            text-shadow: 0 0 20px #FF00FF;
+            text-align: center;
+            padding: 20px;
+            animation: victoryPulse 0.8s infinite;
+        }
+
+        .final-close {
+            margin-top: 40px;
+            background: #FF00FF;
+            border: none;
+            padding: 12px 30px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 40px;
+        }
+
+        @keyframes victoryPulse {
+            0%,100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @media (max-width: 700px) {
+            .score-value { font-size: 16px; }
+            .score-card, .round-info { padding: 5px 12px; }
+            .countdown-number { font-size: 80px; }
+            .round-end-text { font-size: 22px; }
+            .final-text { font-size: 24px; }
+            .touch-hint { bottom: 100px; }
+        }
+    </style>
+</head>
+<body>
+<div class="game-container">
+    <div class="top-panel">
+        <div class="score-card">
+            <div class="score-label" id="scoreLabel">🔴 СЧЁТ</div>
+            <div class="score-value" id="scoreValue">0</div>
+        </div>
+        <div class="round-info">
+            <div class="round-label">⚡ РАУНД</div>
+            <div class="round-value" id="roundValue">1/2</div>
+        </div>
+        <div class="score-card">
+            <div class="score-label" id="scoreLabelB">🔵 СЧЁТ</div>
+            <div class="score-value" id="scoreValueB">0</div>
+        </div>
+    </div>
+
+    <canvas id="runnerCanvas" width="900" height="506"></canvas>
+
+    <div class="touch-hint" id="touchHint">👇 НАЖМИ ПРОБЕЛ ИЛИ ТАПНИ ПО ЭКРАНУ 👆</div>
+
+    <button class="back-btn" id="backBtn">✖ ВЫЙТИ ✖</button>
+</div>
+
+<script>
+    // ==================== ПОЛУЧАЕМ ДАННЫЕ ИГРОКОВ ИЗ URL ====================
+    const urlParams = new URLSearchParams(window.location.search);
+    let playerAName = urlParams.get('p1') || 'ИГРОК A';
+    let playerAAvatar = urlParams.get('p1avatar') || '🔴';
+    let playerBName = urlParams.get('p2') || 'ИГРОК B';
+    let playerBAvatar = urlParams.get('p2avatar') || '🔵';
+    let question = urlParams.get('question') || 'БИТВА ЗАКОНЧЕНА!';
+
+    // Обновляем заголовки
+    document.getElementById('scoreLabel').innerHTML = `${playerAAvatar} ${playerAName}`;
+    document.getElementById('scoreLabelB').innerHTML = `${playerBAvatar} ${playerBName}`;
+
+    // ==================== ПЕРЕМЕННЫЕ ИГРЫ ====================
+    const canvas = document.getElementById('runnerCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+        const maxWidth = Math.min(window.innerWidth - 60, 900);
+        const maxHeight = window.innerHeight - 150;
+        const ratio = 16/9;
+        let width = maxWidth, height = width / ratio;
+        if (height > maxHeight) { height = maxHeight; width = height * ratio; }
+        canvas.width = width; canvas.height = height;
+        canvas.style.width = `${width}px`; canvas.style.height = `${height}px`;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    let width = canvas.width, height = canvas.height;
+
+    // Креветка
+    let shrimp = {
+        x: 80,
+        y: height - 80,
+        width: 40,
+        height: 40,
+        vy: 0,
+        gravity: 0.6,
+        jumpPower: -13,
+        grounded: true
+    };
+
+    // Препятствия
+    let obstacles = [];
+    const obstacleTypes = [
+        { emoji: '🗑️', name: 'МУСОР' },
+        { emoji: '🍽️', name: 'ПОСУДА' },
+        { emoji: '🧻', name: 'ОТХОДЫ' },
+        { emoji: '🥫', name: 'БАНКА' }
+    ];
+
+    // Состояние игры
+    let currentRound = 1;
+    let scores = { A: 0, B: 0 };
+    let currentPlayer = 'A';
+    let currentScore = 0;
+    let gameActive = false;
+    let isWaitingForNext = false;
+    let obstacleCounter = 0;
+    let gameLoopId = null;
+
+    // ==================== ПОКАЗАТЬ ПОБЕДИТЕЛЯ (без кружка и вопроса) ====================
+    function showWinner() {
+        let winnerName, winnerAvatar;
+        if (scores.A > scores.B) {
+            winnerName = playerAName;
+            winnerAvatar = playerAAvatar;
+        } else if (scores.B > scores.A) {
+            winnerName = playerBName;
+            winnerAvatar = playerBAvatar;
+        } else {
+            winnerName = 'НИЧЬЯ';
+            winnerAvatar = '🤝';
+        }
+
+        const overlay = document.createElement('div');
+        overlay.className = 'final-overlay';
+        overlay.innerHTML = `
+            <div class="final-text">🏆 ПОБЕДИЛ ${winnerName} 🏆</div>
+            <div class="final-text" style="font-size: 24px; margin-top: 10px;">${winnerAvatar}</div>
+            <div class="final-text" style="font-size: 18px; margin-top: 20px;">СЧЁТ: ${scores.A} : ${scores.B}</div>
+            <button class="final-close" id="finalCloseBtn">✖ В МЕНЮ ✖</button>
+        `;
+        document.body.appendChild(overlay);
+        document.getElementById('finalCloseBtn').onclick = () => {
+            window.location.href = 'main.html';
+        };
+    }
+
+    // ==================== ЗАВЕРШЕНИЕ РАУНДА ====================
+    function endRound() {
+        if (isWaitingForNext) return;
+        isWaitingForNext = true;
+        gameActive = false;
+        
+        // Сохраняем счёт текущего игрока
+        if (currentPlayer === 'A') {
+            scores.A = currentScore;
+            document.getElementById('scoreValue').innerText = scores.A;
+        } else {
+            scores.B = currentScore;
+            document.getElementById('scoreValueB').innerText = scores.B;
+        }
+        
+        // Показываем результат раунда
+        const overlay = document.createElement('div');
+        overlay.className = 'round-end-overlay';
+        overlay.innerHTML = `
+            <div class="round-end-text">💀 ${currentPlayer === 'A' ? playerAName : playerBName} ПРОИГРАЛ! 💀</div>
+            <div class="round-end-text" style="font-size: 20px;">СЧЁТ В РАУНДЕ: ${currentScore}</div>
+            <button class="final-close" id="continueBtn">ДАЛЕЕ →</button>
+        `;
+        document.body.appendChild(overlay);
+        
+        document.getElementById('continueBtn').onclick = () => {
+            overlay.remove();
+            
+            if (currentRound === 1) {
+                // Переход ко второму раунду
+                currentRound = 2;
+                currentPlayer = 'B';
+                currentScore = 0;
+                document.getElementById('roundValue').innerHTML = '2/2';
+                document.getElementById('touchHint').innerHTML = `🦐 РАУНД 2: ИГРАЕТ ${playerBName} ${playerBAvatar} 🦐`;
+                
+                // Сброс игрового поля
+                shrimp.y = height - 80;
+                shrimp.vy = 0;
+                shrimp.grounded = true;
+                obstacles = [];
+                obstacleCounter = 0;
+                isWaitingForNext = false;
+                
+                // Запускаем обратный отсчёт для второго игрока
+                startCountdown();
+            } else {
+                // Игра окончена, показываем победителя
+                showWinner();
+            }
+        };
+    }
+
+    // ==================== ПРОИГРЫШ ====================
+    function lose() {
+        if (!gameActive || isWaitingForNext) return;
+        gameActive = false;
+        endRound();
+    }
+
+    // ==================== ИГРОВЫЕ ФУНКЦИИ ====================
+    function jump() {
+        if (shrimp.grounded && gameActive && !isWaitingForNext) {
+            shrimp.vy = shrimp.jumpPower;
+            shrimp.grounded = false;
+            document.getElementById('touchHint').innerHTML = '🦐 ПРЫЖОК! 🦐';
+            setTimeout(() => {
+                if (gameActive && !isWaitingForNext) document.getElementById('touchHint').innerHTML = '👇 НАЖМИ ПРОБЕЛ ИЛИ ТАПНИ ПО ЭКРАНУ 👆';
+            }, 500);
+        }
+    }
+
+    function updateGame() {
+        if (!gameActive || isWaitingForNext) return;
+
+        shrimp.vy += shrimp.gravity;
+        shrimp.y += shrimp.vy;
+        
+        if (shrimp.y >= height - shrimp.height - 25) {
+            shrimp.y = height - shrimp.height - 25;
+            shrimp.vy = 0;
+            shrimp.grounded = true;
+        } else {
+            shrimp.grounded = false;
+        }
+
+        obstacleCounter++;
+        if (obstacleCounter > 70 + Math.random() * 50) {
+            obstacleCounter = 0;
+            let type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+            obstacles.push({
+                x: width,
+                y: height - 70,
+                width: 35,
+                height: 35,
+                type: type,
+                counted: false
+            });
+        }
+
+        for (let i = 0; i < obstacles.length; i++) {
+            obstacles[i].x -= 4.5;
+            if (obstacles[i].x + obstacles[i].width < 0) {
+                obstacles.splice(i, 1);
+                i--;
+            }
+        }
+
+        for (let i = 0; i < obstacles.length; i++) {
+            let obs = obstacles[i];
+            if (shrimp.x < obs.x + obs.width &&
+                shrimp.x + shrimp.width > obs.x &&
+                shrimp.y < obs.y + obs.height &&
+                shrimp.y + shrimp.height > obs.y) {
+                lose();
+                return;
+            }
+            if (obs.x + obs.width < shrimp.x && !obs.counted) {
+                obs.counted = true;
+                currentScore++;
+                if (currentPlayer === 'A') {
+                    document.getElementById('scoreValue').innerText = currentScore;
+                } else {
+                    document.getElementById('scoreValueB').innerText = currentScore;
+                }
+            }
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, width, height);
+        
+        ctx.fillStyle = "#030318";
+        ctx.fillRect(0, 0, width, height);
+        
+        ctx.fillStyle = "#1A0033";
+        ctx.fillRect(0, height - 25, width, 25);
+        ctx.strokeStyle = "#FF00FF";
+        ctx.strokeRect(0, height - 25, width, 25);
+        
+        ctx.font = `${shrimp.width}px monospace`;
+        ctx.fillStyle = "#FF69B4";
+        ctx.shadowBlur = 8;
+        ctx.fillText("🦐", shrimp.x, shrimp.y + shrimp.height - 8);
+        
+        for (let obs of obstacles) {
+            ctx.font = `${obs.width}px monospace`;
+            let color = obs.type.emoji === '🗑️' ? '#8B4513' : (obs.type.emoji === '🍽️' ? '#A0522D' : (obs.type.emoji === '🧻' ? '#6B8E23' : '#CD853F'));
+            ctx.fillStyle = color;
+            ctx.fillText(obs.type.emoji, obs.x, obs.y + obs.height - 5);
+        }
+        
+        ctx.font = "12px 'Press Start 2P'";
+        ctx.fillStyle = "#00FFFF";
+        ctx.shadowBlur = 0;
+        ctx.fillText(`РАУНД ${currentRound}: ${currentScore}`, 20, 50);
+        
+        ctx.font = "10px 'Press Start 2P'";
+        ctx.fillStyle = currentPlayer === 'A' ? '#FF00FF' : '#00FFFF';
+        ctx.fillText(`${currentPlayer === 'A' ? playerAName : playerBName} ИГРАЕТ`, width - 180, 50);
+    }
+
+    function gameLoop() {
+        if (!isWaitingForNext) {
+            updateGame();
+            draw();
+        }
+        gameLoopId = requestAnimationFrame(gameLoop);
+    }
+
+    // ==================== ОБРАТНЫЙ ОТСЧЁТ ====================
+    function startCountdown() {
+        const overlay = document.createElement('div');
+        overlay.className = 'countdown-overlay';
+        overlay.innerHTML = `
+            <div class="countdown-number" id="countdownNumber">3</div>
+            <div class="countdown-text" id="countdownText">РАУНД ${currentRound}: ИГРОК ${currentPlayer === 'A' ? playerAName : playerBName}</div>
+        `;
+        document.body.appendChild(overlay);
+        
+        let count = 3;
+        const numberEl = document.getElementById('countdownNumber');
+        const textEl = document.getElementById('countdownText');
+        
+        const interval = setInterval(() => {
+            count--;
+            if (count >= 1) {
+                numberEl.textContent = count;
+                numberEl.style.animation = 'none';
+                setTimeout(() => numberEl.style.animation = 'countdownPulse 0.5s ease-out', 10);
+                textEl.textContent = count === 2 ? 'ЕЩЁ СЕКУНДОЧКУ...' : 'ВНИМАНИЕ...';
+            } else if (count === 0) {
+                numberEl.textContent = 'GO!';
+                numberEl.style.fontSize = '80px';
+                textEl.textContent = 'СТАРТ!';
+                setTimeout(() => {
+                    overlay.remove();
+                    gameActive = true;
+                    isWaitingForNext = false;
+                    document.getElementById('touchHint').innerHTML = '👇 НАЖМИ ПРОБЕЛ ИЛИ ТАПНИ ПО ЭКРАНУ, ЧТОБЫ ПРЫГНУТЬ 👆';
+                }, 500);
+                clearInterval(interval);
+            }
+        }, 1000);
+    }
+
+    // ==================== УПРАВЛЕНИЕ ====================
+    function onKeyDown(e) {
+        if (e.code === 'Space') {
+            e.preventDefault();
+            if (gameActive && !isWaitingForNext) jump();
+        }
+    }
+
+    window.addEventListener('keydown', onKeyDown);
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); if (gameActive && !isWaitingForNext) jump(); });
+    canvas.addEventListener('mousedown', () => { if (gameActive && !isWaitingForNext) jump(); });
+
+    // ==================== ЗАПУСК ====================
+    resizeCanvas();
+    gameLoop();
+    startCountdown();
+
+    document.getElementById('backBtn').onclick = () => {
+        window.location.href = 'main.html';
+    };
+</script>
+</body>
+</html>

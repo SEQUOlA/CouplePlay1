@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>PONG — CouplePlay</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            min-height: 100vh;
+            background: radial-gradient(circle at 30% 20%, #1A0033, #0A0A2A);
+            font-family: 'Press Start 2P', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .game-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: radial-gradient(circle at 30% 20%, #1A0033, #0A0A2A);
+        }
+
+        .score-panel {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 30px;
+            gap: 30px;
+            z-index: 10;
+        }
+
+        .score-box {
+            text-align: center;
+            background: rgba(14,14,42,0.9);
+            padding: 8px 20px;
+            border: 2px solid;
+            box-shadow: 0 0 15px;
+            border-radius: 25px;
+            backdrop-filter: blur(4px);
+        }
+
+        .score-box.left { border-color: #FF00FF; box-shadow: 0 0 15px #FF00FF; }
+        .score-box.right { border-color: #00FFFF; box-shadow: 0 0 15px #00FFFF; }
+
+        .score-label {
+            font-size: 9px;
+            color: #FF69B4;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .score-value {
+            font-size: 28px;
+            color: #00FFFF;
+            text-shadow: 0 0 8px #00FFFF;
+        }
+
+        canvas {
+            display: block;
+            background: #030318;
+            border: 3px solid #FF00FF;
+            box-shadow: 0 0 30px #FF00FF;
+            width: 90%;
+            max-width: 1000px;
+            aspect-ratio: 4/3;
+            cursor: none;
+        }
+
+        /* Сенсорные подсказки */
+        .touch-hint {
+            position: absolute;
+            bottom: 80px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 8px;
+            color: #FF69B4;
+            background: rgba(0,0,0,0.6);
+            padding: 6px;
+            margin: 0 30px;
+            border-radius: 20px;
+            z-index: 10;
+        }
+
+        .back-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0A0A2A;
+            border: 2px solid #FF00FF;
+            color: white;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            padding: 8px 20px;
+            cursor: pointer;
+            z-index: 10;
+            transition: 0.1s;
+            border-radius: 30px;
+        }
+
+        .back-btn:active {
+            transform: translateX(-50%) scale(0.95);
+        }
+
+        /* Анимация победы */
+        .victory-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.96);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(8px);
+            animation: victoryFade 0.3s ease-out;
+        }
+
+        @keyframes victoryFade {
+            0% { opacity: 0; transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .victory-text {
+            font-size: 36px;
+            color: #FFFF00;
+            text-shadow: 0 0 20px #FF00FF, 0 0 40px #FF00FF;
+            text-align: center;
+            padding: 20px;
+            animation: victoryPulse 0.8s infinite;
+        }
+
+        .victory-avatar {
+            font-size: 80px;
+            margin: 20px;
+            filter: drop-shadow(0 0 20px gold);
+        }
+
+        .victory-sub {
+            font-size: 14px;
+            color: #00FFFF;
+            margin-top: 15px;
+        }
+
+        .victory-close {
+            margin-top: 40px;
+            background: #FF00FF;
+            border: none;
+            padding: 12px 30px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 40px;
+            transition: 0.1s;
+        }
+
+        .victory-close:active {
+            transform: scale(0.95);
+        }
+
+        @keyframes victoryPulse {
+            0%,100% { transform: scale(1); text-shadow: 0 0 20px #FF00FF; }
+            50% { transform: scale(1.05); text-shadow: 0 0 40px #FFFF00; }
+        }
+
+        @media (max-width: 700px) {
+            .score-panel { padding: 0 15px; }
+            .score-box { padding: 5px 12px; }
+            .score-value { font-size: 20px; }
+            .score-label { font-size: 7px; }
+            .victory-text { font-size: 24px; }
+            .victory-avatar { font-size: 60px; }
+            .touch-hint { bottom: 100px; }
+        }
+    </style>
+</head>
+<body>
+<div class="game-container">
+    <div class="score-panel">
+        <div class="score-box left">
+            <div class="score-label" id="playerALabel">🔴 PLAYER A</div>
+            <div class="score-value" id="scoreA">0</div>
+        </div>
+        <div class="score-box right">
+            <div class="score-label" id="playerBLabel">🔵 PLAYER B</div>
+            <div class="score-value" id="scoreB">0</div>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas" width="1000" height="600"></canvas>
+
+    <div class="touch-hint" id="touchHint">👇 СВАЙП ВВЕРХ/ВНИЗ ИЛИ КНОПКИ W/S И СТРЕЛКИ 👆</div>
+
+    <button class="back-btn" id="backBtn">✖ ВЫЙТИ В МЕНЮ ✖</button>
+</div>
+
+<script>
+    // ==================== ПОЛУЧАЕМ ИМЕНА И СМАЙЛИКИ ИЗ URL ====================
+    const urlParams = new URLSearchParams(window.location.search);
+    let playerAName = urlParams.get('p1') || 'PLAYER A';
+    let playerAAvatar = urlParams.get('p1avatar') || '🔴';
+    let playerBName = urlParams.get('p2') || 'PLAYER B';
+    let playerBAvatar = urlParams.get('p2avatar') || '🔵';
+
+    // Обновляем отображение имён игроков
+    document.getElementById('playerALabel').innerHTML = `${playerAAvatar} ${playerAName}`;
+    document.getElementById('playerBLabel').innerHTML = `${playerBAvatar} ${playerBName}`;
+
+    // ==================== КОД ИГРЫ PONG ====================
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    function resizeCanvas() {
+        const maxWidth = Math.min(window.innerWidth - 60, 1000);
+        const maxHeight = window.innerHeight - 150;
+        const ratio = 4/3;
+        let width = maxWidth;
+        let height = width / ratio;
+        if (height > maxHeight) {
+            height = maxHeight;
+            width = height * ratio;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    let width = canvas.width, height = canvas.height;
+    const paddleW = 10, paddleH = 100, paddleSpeed = 6;
+    let leftY = height/2 - paddleH/2, rightY = height/2 - paddleH/2;
+    let ballX = width/2, ballY = height/2;
+    let ballSpeedX = 2.5, ballSpeedY = 2.2;
+    const ballSize = 9;
+    let leftScore = 0, rightScore = 0;
+    let gameActive = true;
+    let ballLaunched = false;
+    let gameEnded = false;
+
+    const keys = { w: false, s: false, ArrowUp: false, ArrowDown: false };
+
+    // ==================== ФУНКЦИЯ ПОБЕДЫ ====================
+    function showVictory(winner) {
+        if (gameEnded) return;
+        gameEnded = true;
+        gameActive = false;
+        
+        let winnerName, winnerAvatar;
+        if (winner === 'A') {
+            winnerName = playerAName;
+            winnerAvatar = playerAAvatar;
+        } else {
+            winnerName = playerBName;
+            winnerAvatar = playerBAvatar;
+        }
+        
+        const overlay = document.createElement('div');
+        overlay.className = 'victory-overlay';
+        overlay.innerHTML = `
+            <div class="victory-text">🏆 ПОБЕДИЛ ${winnerName} 🏆</div>
+            <div class="victory-avatar">${winnerAvatar}</div>
+            <div class="victory-sub">⚡ PONG CLASSIC ⚡</div>
+            <button class="victory-close" id="victoryCloseBtn">✖ В МЕНЮ ✖</button>
+        `;
+        document.body.appendChild(overlay);
+        
+        document.getElementById('victoryCloseBtn').onclick = () => {
+            window.location.href = 'games.html';
+        };
+    }
+
+    function checkWinner() {
+        if (leftScore >= 10) {
+            showVictory('A');
+            return true;
+        }
+        if (rightScore >= 10) {
+            showVictory('B');
+            return true;
+        }
+        return false;
+    }
+
+    // ==================== УПРАВЛЕНИЕ ====================
+    function keyHandler(e, value) {
+        const key = e.key;
+        if (key === 'w' || key === 'W') keys.w = value;
+        if (key === 's' || key === 'S') keys.s = value;
+        if (key === 'ArrowUp') keys.ArrowUp = value;
+        if (key === 'ArrowDown') keys.ArrowDown = value;
+        if (['ArrowUp','ArrowDown','w','W','s','S'].includes(key)) e.preventDefault();
+        
+        if (!ballLaunched && gameActive && !gameEnded && (keys.w || keys.s || keys.ArrowUp || keys.ArrowDown)) {
+            ballLaunched = true;
+            ballSpeedX = (Math.random() > 0.5 ? 2.5 : -2.5);
+            ballSpeedY = (Math.random() > 0.5 ? 2.2 : -2.2);
+            document.getElementById('touchHint').innerHTML = '🎮 ИГРА НАЧАЛАСЬ! 🎮';
+            setTimeout(() => {
+                if (gameActive && !gameEnded) document.getElementById('touchHint').innerHTML = '👇 СВАЙП ВВЕРХ/ВНИЗ ИЛИ КНОПКИ W/S И СТРЕЛКИ 👆';
+            }, 2000);
+        }
+    }
+
+    window.addEventListener('keydown', (e) => keyHandler(e, true));
+    window.addEventListener('keyup', (e) => keyHandler(e, false));
+
+    function updateScoreUI() {
+        document.getElementById('scoreA').innerText = leftScore;
+        document.getElementById('scoreB').innerText = rightScore;
+    }
+
+    function movePaddles() {
+        if (!gameActive || gameEnded) return;
+        if (keys.w && leftY > 0) leftY -= paddleSpeed;
+        if (keys.s && leftY + paddleH < height) leftY += paddleSpeed;
+        if (keys.ArrowUp && rightY > 0) rightY -= paddleSpeed;
+        if (keys.ArrowDown && rightY + paddleH < height) rightY += paddleSpeed;
+    }
+
+    function resetBall() {
+        ballX = width/2; ballY = height/2;
+        ballSpeedX = 0; ballSpeedY = 0;
+        ballLaunched = false;
+    }
+
+    function moveBall() {
+        if (!gameActive || gameEnded) return;
+        if (!ballLaunched) return;
+        
+        ballX += ballSpeedX; ballY += ballSpeedY;
+        
+        if (ballY <= 0 || ballY + ballSize >= height) {
+            ballSpeedY = -ballSpeedY;
+            ballY = Math.max(0, Math.min(ballY, height - ballSize));
+        }
+        
+        if (ballX <= paddleW && ballY + ballSize > leftY && ballY < leftY + paddleH) {
+            let hitPos = (ballY + ballSize/2) - (leftY + paddleH/2);
+            let angle = (hitPos / (paddleH/2)) * 0.7;
+            ballSpeedX = Math.abs(ballSpeedX);
+            ballSpeedX = 3.0;
+            ballSpeedY = 3.0 * angle;
+            ballX = paddleW + 2;
+        }
+        
+        if (ballX + ballSize >= width - paddleW && ballY + ballSize > rightY && ballY < rightY + paddleH) {
+            let hitPos = (ballY + ballSize/2) - (rightY + paddleH/2);
+            let angle = (hitPos / (paddleH/2)) * 0.7;
+            ballSpeedX = -Math.abs(ballSpeedX);
+            ballSpeedX = -3.0;
+            ballSpeedY = 3.0 * angle;
+            ballX = width - paddleW - ballSize - 2;
+        }
+        
+        if (ballX < 0) {
+            rightScore++;
+            updateScoreUI();
+            if (!checkWinner()) resetBall();
+            return;
+        }
+        if (ballX + ballSize > width) {
+            leftScore++;
+            updateScoreUI();
+            if (!checkWinner()) resetBall();
+            return;
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = "#030318"; ctx.fillRect(0, 0, width, height);
+        
+        ctx.strokeStyle = "#FF00FF"; ctx.shadowBlur = 6; ctx.setLineDash([10, 15]);
+        ctx.beginPath(); ctx.moveTo(width/2, 0); ctx.lineTo(width/2, height); ctx.stroke();
+        ctx.setLineDash([]);
+        
+        ctx.fillStyle = "#00FFFF"; ctx.shadowBlur = 8;
+        ctx.fillRect(5, leftY, paddleW, paddleH);
+        ctx.fillRect(width - paddleW - 5, rightY, paddleW, paddleH);
+        
+        ctx.fillStyle = "#FF69B4"; ctx.fillRect(ballX, ballY, ballSize, ballSize);
+        
+        ctx.strokeStyle = "#FFFF00"; ctx.lineWidth = 2; ctx.shadowBlur = 4;
+        ctx.strokeRect(3, 3, width-6, height-6);
+        ctx.shadowBlur = 0;
+        
+        if (!ballLaunched && gameActive && !gameEnded) {
+            ctx.font = "14px 'Press Start 2P'";
+            ctx.fillStyle = "#FFFF00";
+            ctx.shadowBlur = 0;
+            ctx.fillText("НАЖМИТЕ W/S ИЛИ СТРЕЛКИ", width/2 - 180, height/2 - 50);
+        }
+    }
+
+    // ==================== СЕНСОРНОЕ УПРАВЛЕНИЕ (СВАЙПЫ) ====================
+    let touchStartY = 0;
+    let touchStartTime = 0;
+
+    document.addEventListener('touchstart', (e) => {
+        if (!gameActive || gameEnded) return;
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+    });
+
+    document.addEventListener('touchend', (e) => {
+        if (!gameActive || gameEnded) return;
+        const touchEndY = e.changedTouches[0].clientY;
+        const deltaY = touchEndY - touchStartY;
+        const deltaTime = Date.now() - touchStartTime;
+        
+        if (deltaTime < 300 && Math.abs(deltaY) > 30) {
+            e.preventDefault();
+            // Свайп для левого игрока (левая половина экрана)
+            const touchX = e.changedTouches[0].clientX;
+            const isLeftSide = touchX < window.innerWidth / 2;
+            
+            if (isLeftSide) {
+                if (deltaY < 0) {
+                    // Свайп вверх -> левая ракетка вверх
+                    keys.w = true;
+                    setTimeout(() => keys.w = false, 100);
+                } else {
+                    // Свайп вниз -> левая ракетка вниз
+                    keys.s = true;
+                    setTimeout(() => keys.s = false, 100);
+                }
+            } else {
+                if (deltaY < 0) {
+                    keys.ArrowUp = true;
+                    setTimeout(() => keys.ArrowUp = false, 100);
+                } else {
+                    keys.ArrowDown = true;
+                    setTimeout(() => keys.ArrowDown = false, 100);
+                }
+            }
+            
+            // Запуск мяча при первом свайпе
+            if (!ballLaunched && gameActive && !gameEnded) {
+                ballLaunched = true;
+                ballSpeedX = (Math.random() > 0.5 ? 2.5 : -2.5);
+                ballSpeedY = (Math.random() > 0.5 ? 2.2 : -2.2);
+            }
+        }
+    });
+
+    function gameLoop() {
+        movePaddles();
+        moveBall();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    resizeCanvas();
+    resetBall();
+    gameLoop();
+
+    document.getElementById('backBtn').onclick = () => {
+        window.location.href = 'games.html';
+    };
+</script>
+</body>
+</html>
